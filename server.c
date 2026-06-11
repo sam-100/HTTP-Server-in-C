@@ -12,7 +12,7 @@ void getRequest(int fd) {
     char buffer[256];
     memset(buffer, 0, 256);
     int bytes_received = recv(fd, buffer, 256, 0);
-    printf("%d bytes received\n", bytes_received);
+    // printf("%d bytes received\n", bytes_received);
     printf("Request received: \n%s\n", buffer);
 }
 
@@ -23,26 +23,27 @@ void sendResponse(int fd) {
 
     msg = "HTTP/1.1 200 OK\r\n";
     bytes_sent = send(fd, msg, strlen(msg), 0);
-    printf("%d bytes sent.\n", bytes_sent);
+    // printf("%d bytes sent.\n", bytes_sent);
     
     msg = malloc(256);
     sprintf(msg, "Content-Length: %d\r\n", (int)strlen(body));
     bytes_sent = send(fd, msg, strlen(msg), 0);
-    printf("%d bytes sent.\n", bytes_sent);
+    // printf("%d bytes sent.\n", bytes_sent);
 
     msg = "Content-Type: text/html\r\n";
     bytes_sent = send(fd, msg, strlen(msg), 0);
-    printf("%d bytes sent.\n", bytes_sent);
+    // printf("%d bytes sent.\n", bytes_sent);
     
-    msg = "Connection: close\r\n";
+    msg = "Connection: keep-alive\r\n";
     bytes_sent = send(fd, msg, strlen(msg), 0);
-    printf("%d bytes sent.\n", bytes_sent);
+    // printf("%d bytes sent.\n", bytes_sent);
+
     msg = "\r\n";
     bytes_sent = send(fd, msg, strlen(msg), 0);
-    printf("%d bytes sent.\n", bytes_sent);
-
+    // printf("%d bytes sent.\n", bytes_sent);
+    
     bytes_sent = send(fd, body, strlen(body), 0);
-    printf("%d bytes sent.\n", bytes_sent);
+    // printf("%d bytes sent.\n", bytes_sent);
 }
 
 int main(int argc, char **argv) {
@@ -92,17 +93,22 @@ int main(int argc, char **argv) {
             perror("accept() error: ");
             exit(-1);
         }
+        printf("New connection created.\n");
 
         // getting http request
         getRequest(new_fd);
+        // printf("Request received\n");
         
         // sending response
         sendResponse(new_fd);
+        // printf("Response sent\n");
+
+        // close(new_fd);
+        printf("\n\n");
     }
     
 
     // cleanup and release resources
     close(sock_fd);
-    close(new_fd);
     return 0;
 }
