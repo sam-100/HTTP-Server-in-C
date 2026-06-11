@@ -105,6 +105,7 @@ struct sockaddr_in *get_internet_v4_interface() {
         if(strcmp(if_addr->ifa_name, "wlp1s0") == 0 && if_addr->ifa_addr->sa_family == AF_INET) {
             return (struct sockaddr_in*)if_addr->ifa_addr;
         }
+        
     }
     return NULL;
 }

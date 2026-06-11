@@ -6,6 +6,11 @@
 #include <arpa/inet.h>
 
 int main(int argc, char **argv) {
+    if(argc != 3) {
+        printf("Usage: %s <ipv4_addr> <port_no>\n", argv[0]);
+        return 0;
+    }
+    int port = atoi(argv[2]);
 
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(sock_fd == -1) {
@@ -16,8 +21,8 @@ int main(int argc, char **argv) {
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(struct sockaddr_in));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr("10.64.111.46");
-    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    server_addr.sin_port = htons(port);
     if(connect(sock_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_in)) == -1) {
         perror("Connect error: ");
         exit(-1);

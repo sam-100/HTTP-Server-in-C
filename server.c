@@ -8,9 +8,51 @@
 #include <sys/socket.h>
 #include "utils.h"
 
-int port = 8080;
+void getRequest(int fd) {
+    char buffer[256];
+    memset(buffer, 0, 256);
+    int bytes_received = recv(fd, buffer, 256, 0);
+    printf("%d bytes received\n", bytes_received);
+    printf("Request received: \n%s\n", buffer);
+}
+
+void sendResponse(int fd) {
+    int bytes_sent;
+    char *msg, *body;
+    body = load_file("index.html");
+
+    msg = "HTTP/1.1 200 OK\r\n";
+    bytes_sent = send(fd, msg, strlen(msg), 0);
+    printf("%d bytes sent.\n", bytes_sent);
+    
+    msg = malloc(256);
+    sprintf(msg, "Content-Length: %d\r\n", (int)strlen(body));
+    bytes_sent = send(fd, msg, strlen(msg), 0);
+    printf("%d bytes sent.\n", bytes_sent);
+
+    msg = "Content-Type: text/html\r\n";
+    bytes_sent = send(fd, msg, strlen(msg), 0);
+    printf("%d bytes sent.\n", bytes_sent);
+    
+    msg = "Connection: close\r\n";
+    bytes_sent = send(fd, msg, strlen(msg), 0);
+    printf("%d bytes sent.\n", bytes_sent);
+    msg = "\r\n";
+    bytes_sent = send(fd, msg, strlen(msg), 0);
+    printf("%d bytes sent.\n", bytes_sent);
+
+    bytes_sent = send(fd, body, strlen(body), 0);
+    printf("%d bytes sent.\n", bytes_sent);
+}
 
 int main(int argc, char **argv) {
+    if(argc != 2) {
+        printf("Usage: %s <port_no>\n", argv[0]);
+        return 0;
+    }
+
+    int port = atoi(argv[1]);
+
     print_network_interfaces();
     
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -41,45 +83,22 @@ int main(int argc, char **argv) {
     }
 
     struct sockaddr_in client_addr;
-    int client_addr_length = sizeof(struct sockaddr_in);
-    printf("Listening on %s:%d\n", inet_ntoa(addr->sin_addr), port);
-    int new_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &client_addr_length);
-    if(new_fd == -1) {
-        perror("accept() error: ");
-        exit(-1);
+    int client_addr_length, new_fd;
+    while(1) {
+        printf("Listening on %s:%d\n", inet_ntoa(addr->sin_addr), port);
+        new_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &client_addr_length);
+        client_addr_length = sizeof(struct sockaddr_in);
+        if(new_fd == -1) {
+            perror("accept() error: ");
+            exit(-1);
+        }
+
+        // getting http request
+        getRequest(new_fd);
+        
+        // sending response
+        sendResponse(new_fd);
     }
-    printf("Client connection established on fd %d\n", new_fd);
-
-
-    char buffer[256];
-    memset(buffer, 0, 256);
-
-    // getting http request
-    int bytes_received = recv(new_fd, buffer, 256, 0);
-    printf("%d bytes received\n", bytes_received);
-    printf("Request received: \n%s\n", buffer);
-
-    // sending response
-    int bytes_sent;
-    char *msg, *body;
-    body = load_file("index.html");
-
-    msg = "HTTP/1.1 403 Forbidden\r\n";
-    bytes_sent = send(new_fd, msg, strlen(msg), 0);
-    printf("%d bytes sent.\n", bytes_sent);
-    
-    msg = malloc(256);
-    sprintf(msg, "Content-Length: %d\r\n", (int)strlen(body));
-    bytes_sent = send(new_fd, msg, strlen(msg), 0);
-    printf("%d bytes sent.\n", bytes_sent);
-
-    msg = "\r\n";
-    bytes_sent = send(new_fd, msg, strlen(msg), 0);
-    printf("%d bytes sent.\n", bytes_sent);
-
-    bytes_sent = send(new_fd, body, strlen(body), 0);
-    printf("%d bytes sent.\n", bytes_sent);
-
     
 
     // cleanup and release resources
