@@ -6,6 +6,15 @@
 #include <string.h>
 #include <arpa/inet.h>
 
+
+static int get_file_size(FILE *file) {
+    int pos = fseek(file, 0, SEEK_CUR);
+    fseek(file, 0, SEEK_END);
+    int size = ftell(file);
+    fseek(file, pos, SEEK_SET);
+    return size;
+}
+
 char *load_file(const char *file_path) {
     FILE *file = fopen(file_path, "r");
     if(file == NULL) {
@@ -16,8 +25,7 @@ char *load_file(const char *file_path) {
     int length, bytes_read;
     char *buffer;
 
-    fseek(file, 0, SEEK_END);
-    length = ftell(file);
+    length = get_file_size(file);
     
     buffer = malloc(length + 1);
     if(buffer == NULL) {
@@ -25,7 +33,6 @@ char *load_file(const char *file_path) {
         exit(-1);
     }
 
-    fseek(file, 0, SEEK_SET);
     bytes_read = fread(buffer, 1, length, file);
     if(bytes_read != length) {
         fprintf(stderr, "%d bytes read but file size is %d bytes\n", bytes_read, length);
